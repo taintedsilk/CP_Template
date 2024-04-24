@@ -1,0 +1,45 @@
+struct sqrt_decp{
+    const int DEFAULT = 0;
+    int block_sz;
+    vector<int>blockPos;
+    vector<int>st;
+    vector<int>val;
+    vector<int>blk_val;
+    sqrt_decp(int n) {
+        block_sz = sqrt(n);
+        blockPos.resize(n);
+        st.resize(block_sz + 5);
+        f(i, n) blockPos[i] = i / block_sz;
+        f(i, st.size()) {
+            st[i] = block_sz * i;
+        }
+        val.resize(n);
+        blk_val.resize(block_sz + 5);
+    }
+    void update(int i) {
+        // something val
+        // something block_val
+    }
+    ll query(int l, int r) {
+        ll res = DEFAULT;
+        int blk_l = blockPos[l], blk_r = blockPos[r];
+        if (blk_l == blk_r) {
+        
+            for (; l <= r; l++) {
+                // something
+            }
+        }
+        else {
+            for (int i = l; i < st[blk_l + 1]; i++) {
+                // something
+            }
+            for (int i = r; i >= st[blk_r]; i--) {
+                // something
+            }
+            for (int i = blk_l + 1; i < blk_r; i++) {
+                // something
+            }
+        }
+        return res;
+    }
+};

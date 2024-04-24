@@ -1,0 +1,96 @@
+struct sum_seg{
+    int n, h;
+    vector<ll>st, add, ass, cnt;
+    sum_seg() {}
+    sum_seg(int n) : n(n) {
+        st.resize(2 * n);
+        add.resize(n);
+        ass.resize(n, LLONG_MIN);
+        cnt.resize(2 * n);
+        h = 32 - __builtin_clz(n);
+        f(i, n) cnt[i + n] = 1;
+        fd(i, n - 1, 0) {
+            cnt[i] = cnt[i << 1] + cnt[i << 1 | 1];
+        }
+    }
+    inline int combiner(int const a, int const b) {
+        return max(a, b);
+    }
+    void build() {
+        fd(i, n - 1, 0) {
+            st[i] = st[i << 1] + st[i << 1 | 1];
+            // cnt[i] = cnt[i << 1] + cnt[i << 1 | 1];
+        }
+    }
+    void apply_add(int i, int val) {
+        st[i] += val * cnt[i];
+        if (i < n) {
+            if (ass[i] == LLONG_MIN) add[i] += val;
+            else ass[i] += val;
+        }
+    }
+    void apply_ass(int i, int val) {
+        st[i] = val * cnt[i];
+        if (i < n) {
+            add[i] = 0;
+            ass[i] = val;
+        }
+    }
+    void push(int i) {
+        for (int s = h; s > 0; s--) {
+            int idx = i >> s;
+
+            if (ass[idx] != LLONG_MIN) {
+                apply_ass(idx << 1, ass[idx]);
+                apply_ass(idx << 1 | 1, ass[idx]);
+                ass[idx] = LLONG_MIN;
+            }
+            if (add[idx]) {
+                apply_add(idx << 1, add[idx]);
+                apply_add(idx << 1 | 1, add[idx]);
+                add[idx] = 0;
+            }
+        }
+    }
+    void up(int i) {
+        while (i > 1) {
+            i >>= 1,
+            st[i] = (ass[i] == LLONG_MIN? st[i << 1] + st[i << 1 | 1] + add[i] * cnt[i]: ass[i] * cnt[i]);
+        }
+    }
+    void add_update(int l, int r, int val) {
+        l += n, r += n;
+        int sl = l, sr = r;
+        push(l);
+        push(r - 1);
+        for (; l < r; l >>=1, r >>= 1) {
+            if (l & 1) apply_add(l++, val);
+            if (r & 1) apply_add(--r, val);
+        }
+        up(sl);
+        up(sr - 1);
+    }
+    void assign_update(int l, int r, int val) {
+        l += n, r += n;
+        push(l);
+        push(r - 1);
+        int sl = l, sr = r;
+        for (; l < r; l >>=1, r >>= 1) {
+            if (l & 1) apply_ass(l++, val);
+            if (r & 1) apply_ass(--r, val);
+        }
+        up(sl);
+        up(sr - 1);
+    }
+    ll query(int l, int r) {
+        l += n, r += n;
+        push(l);
+        push(r - 1);
+        ll res = 0;
+        for (;l < r; l >>= 1, r >>= 1) {
+            if (l & 1) res += st[l++];
+            if (r & 1) res += st[--r];
+        }
+        return res;
+    }
+};

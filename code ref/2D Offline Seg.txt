@@ -1,0 +1,118 @@
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+// using namespace __gnu_pbds;
+
+using namespace std;
+
+using ll = long long;
+using bl = bool;
+using str = string;
+
+struct qhash
+{
+	static uint64_t splitmix64(uint64_t x)
+	{
+		// http://xorshift.di.unimi.it/splitmix64.c
+		x += 0x9e3779b97f4a7c15;
+		x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+		x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+		return x ^ (x >> 31);
+	}
+
+	size_t operator()(uint64_t x)
+		const
+	{
+		static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
+		return splitmix64(x + FIXED_RANDOM);
+	}
+};
+#define fi first
+#define se second
+#define f(i, n) for (ll i = 0; i < n; i += 1)
+#define fu(i, start, end) for (int i = start; i < end; i += 1)
+#define fd(i, start, end) for (int i = start; i >= end; i -= 1)
+#define bit(i, k) ((i >> k) & 1LL)
+#define MOD 998244353
+ll n;
+pair<ll, ll>arr[2000000];
+vector<ll>node[200000];
+vector<ll>st[200000];
+void fake_update(ll x, ll y) {
+	for (x += n; x >= 1; x >>= 1) {
+		node[x].push_back(y);
+	}
+}
+void init() {
+	for (int i = 0; i < 2 * n; i++) {
+		sort(node[i].begin(), node[i].end());
+		node[i].resize(unique(node[i].begin(), node[i].end()) - node[i].begin());
+		st[i].resize(2 * node[i].size());
+	}
+}
+void update1d(vector<ll>&st, ll i, ll val) {
+	i += (st.size() / 2);
+	if (st[i] > val) return;
+	for (st[i] = val; i > 1; i >>= 1) {
+		st[i >> 1] = max(st[i], st[i ^ 1]);
+	}
+}
+void update2d(ll x, ll y, ll val) {
+	for (x += n; x > 1; x >>= 1) {
+		int ty = lower_bound(node[x].begin(), node[x].end(), y) - node[x].begin();
+		update1d(st[x], ty, val);
+	}
+}
+ll query1d(ll idx, ll r) {
+	ll l = 0, res = 0;
+	r = lower_bound(node[idx].begin(), node[idx].end(), r) - node[idx].begin();
+	for (l += node[idx].size(), r += node[idx].size(); l < r; l >>= 1, r >>= 1) {
+		if (l & 1) res = max(res, st[idx][l++]);
+		if (r & 1) res = max(res, st[idx][--r]);
+	}
+	return res;
+}
+ll query2d(ll x, ll y) {
+	ll l = 0, r = x;
+	ll res = 0;
+	for (l += n, r += n; l < r; l >>= 1, r >>= 1) {
+		if (l & 1) res = max(res, query1d(l++, y));
+		if (r & 1) res = max(res, query1d(--r, y));
+	}
+	return res;
+}
+void solve() {
+	
+	cin >> n;
+	f(i, n) cin >> arr[i].fi >> arr[i].se;
+	vector<ll>x, y;
+	x.reserve(n); y.reserve(n);
+	f(i, n) x.push_back(arr[i].fi), y.push_back(arr[i].se);
+
+	sort(x.begin(), x.end());
+	sort(y.begin(), y.end());
+	x.resize(unique(x.begin(), x.end()) - x.begin());
+	y.resize(unique(y.begin(), y.end()) - y.begin());
+	
+	f(i, n) {
+		arr[i].fi = lower_bound(x.begin(), x.end(), arr[i].fi) - x.begin();
+		arr[i].se = lower_bound(y.begin(), y.end(), arr[i].se) - y.begin();
+	}
+	f(i, n) 
+		fake_update(arr[i].fi, arr[i].se);
+	
+	init();
+	ll res = 0;
+	f(i, n) {
+		//cout << "cur i: " << i << '\n';
+		ll val = query2d(arr[i].fi, arr[i].se);
+		res = max(res, val + 1);
+		update2d(arr[i].fi, arr[i].se, val + 1);
+	}
+	cout << res;
+}
+int main() {
+	ios_base::sync_with_stdio(0);
+	cin.tie(0);
+	solve();
+}

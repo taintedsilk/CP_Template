@@ -1,0 +1,87 @@
+struct flow_edge{
+    int a, b;
+    ll flow = 0, cap;
+    flow_edge(int a, int b, int cap) : a(a), b(b), cap(cap) {} 
+};
+struct dinic{
+    int n, st, ed;
+    vector<vector<int>>adj;
+    vector<flow_edge> edges;
+    vector<int>h;  
+    vector<int>dx;
+    dinic(int n, int st, int ed) : n(n), st(st), ed(ed) {
+        adj.resize(n);
+        h.resize(n);
+        dx.resize(n);
+        
+    }
+    void add_edge(int a, int b, int c) {
+        adj[a].push_back(edges.size());
+        edges.push_back({a, b, c});
+        adj[b].push_back(edges.size());
+        edges.push_back({b, a, 0});
+    }
+    bl bfs() {
+        fill(h.begin(), h.end(), -1);
+        h[st] = 0;
+        queue<int>q;
+        q.push(st);
+        bl f = 0;
+        while (q.size()) {
+            int cur = q.front();
+            if (cur == ed) f = 1;
+            q.pop();
+            for (auto &val : adj[cur]) {
+                flow_edge &e = edges[val];
+                if (h[e.b] == -1 && e.cap - e.flow > 0) {
+                    h[e.b] = h[cur] + 1;
+                    q.push(e.b);
+                }
+            }
+        }
+        return f;
+    }
+    int dfs(int a, ll mx) {
+        if (mx == 0) return 0;
+        else if (a == ed) return mx;
+        for (;dx[a] < adj[a].size(); dx[a]++) {
+            flow_edge &e = edges[adj[a][dx[a]]];
+            if (e.cap - e.flow > 0 && h[e.b] == h[a] + 1) {
+                ll val = dfs(e.b, min(mx, e.cap - e.flow));
+                if (val > 0) {
+                    e.flow += val;
+                    edges[adj[a][dx[a]] ^ 1].flow -= val;
+                    return val;
+                }
+            }
+        }
+        return 0;
+    }
+    ll get_flow() {
+        ll res = 0;
+        while (bfs()) {
+            fill(dx.begin(), dx.end(), 0);
+            while (ll add = dfs(st, LLONG_MAX)) {
+                res += add;
+            }
+        }        
+        return res;
+    }
+};
+/***
+void solve() {
+    ll n, m;
+    cin >> n >> m;
+    dinic bruh(n, 0, n - 1);
+    f(i, m) {
+        ll a, b, c;
+        cin >> a >> b >> c;
+        a--; b--;
+        bruh.add_edge(a, b, c);
+    }
+
+    // cerr << bruh.adj[0].size() << '\n';
+    cout << bruh.get_flow() << '\n';
+
+}
+***/

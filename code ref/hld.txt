@@ -1,0 +1,161 @@
+#include <bits/stdc++.h>
+// #include <ext/pb_ds/assoc_container.hpp>
+// #include <ext/pb_ds/tree_policy.hpp>
+using namespace std;
+// using namespace __gnu_pbds;
+
+using ll = int;
+using bl = bool;
+using str = string;
+using db = double;
+
+struct qhash
+{
+    static uint64_t splitmix64(uint64_t x)
+    {
+        // http://xorshift.di.unimi.it/splitmix64.c
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const
+    {
+        static const uint64_t FIXED_RANDOM =
+            chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+#define fi first
+#define se second
+
+#define mp(p1, p2) make_pair(p1, p2)
+#define f(i, n) for (ll i = 0; i < n; i += 1)
+#define fv(i, v) for (typeof(v.begin()) i = v.begin(); i != v.end(); i++)
+#define fu(i, start, end) for (int i = start; i < end; i += 1)
+#define fd(i, start, end) for (int i = start; i >= end; i -= 1)
+#define bit(var, pos) ((var >> pos) & 1)
+#define pb push_back
+// #define ordered_set tree<pair<ll, ll>, null_type, less<pair<ll, ll>>, rb_tree_tag, tree_order_statistics_node_update>
+#define MOD 998244353
+ll sz[10000];
+ll d[10000];
+ll par[10000];
+vector<pair<ll, ll>>adj[10000];
+ll up[10000];
+ll id[10000];
+ll st[20000], n;
+void update(ll i, ll a) {
+    for (st[i += n] = a; i > 1; i >>= 1) {
+        st[i >> 1] = max(st[i], st[i ^ 1]);
+    }
+}
+ll dfs_sz(ll a, ll b) {
+    sz[a] = 1;
+
+    for (auto &val : adj[a]) {
+        if (val.fi != b) {
+            // arr[val.fi] = val.se;
+            par[val.fi] = a;
+            d[val.fi] = d[a] + 1;
+            sz[a] += dfs_sz(val.fi, a);
+        }
+    }
+    return sz[a];
+}
+ll cur = 0;
+void dfs_hld(ll a, ll b, ll top) {
+    up[a] = top;
+    id[a] = cur++;
+    ll hsz = -1, c = -1;
+    for (auto &val : adj[a]) {
+        if (val.fi != b && sz[val.fi] > hsz) {
+            hsz = sz[val.fi];
+            c = val.fi;
+        }
+    }
+    if (hsz == -1) return;
+    dfs_hld(c, a, top);
+    for (auto &val : adj[a]) {
+        if (val.fi != b && val.fi != c) dfs_hld(val.fi, a, val.fi);
+    }
+}
+ll stquery(ll l, ll r) {
+    ll res = -1;
+    for (l += n, r += n; l < r; l >>= 1, r >>= 1) {
+        if (l & 1) res = max(res, st[l++]);
+        if (r & 1) res = max(res, st[--r]); 
+    }
+    return res;
+}
+// ll cnt = 1000000;
+ll query(ll a, ll b) {
+    ll ra = 0, rb = 0;
+    while (up[a] != up[b]) {
+        if (d[up[a]] < d[up[b]]) {
+            swap(a, b);
+            swap(ra, rb);
+        }
+        ra = max(ra, stquery(id[up[a]], id[a] + 1));
+        a = par[up[a]];
+    }
+    
+    if (d[a] < d[b]) {
+        swap(a, b);
+        swap(ra, rb);
+    }
+    ra = max(ra, stquery(id[b] + 1, id[a] + 1));
+    return max(ra, rb);
+}
+vector<ll> edges[10000];
+void solve() {
+    cin >> n;
+    cur = 0;
+    f(i, n) adj[i].clear();
+    f(i, n - 1) {
+        ll a, b, c;
+        cin >> a >> b >> c;
+        a--; b--;
+        adj[a].push_back({b, c});
+        adj[b].push_back({a, c});
+        edges[i] = {a, b, c};
+    }
+    dfs_sz(0, -1);
+    dfs_hld(0, -1, 0);
+    f(i, n - 1) 
+        if (d[edges[i][0]] > d[edges[i][1]]) swap(edges[i][0], edges[i][1]);
+    f(i, n - 1) update(id[edges[i][1]], edges[i][2]); 
+    str type;
+    while (cin >> type) {
+        if (type == "DONE") break;
+        else if (type == "CHANGE") {
+            ll idx, val;
+            cin >> idx >> val;
+            idx--;
+            update(id[edges[idx][1]], val);
+        }
+        else {
+            ll a, b;
+            cin >> a >> b;
+            a--; b--;
+            cout << query(a, b) << '\n';
+        }
+    }
+}
+int main()
+{
+
+    // freopen("shopping.INP", "r" ,stdin); freopen("shopping.OUT", "w", stdout);
+    std::ios_base::sync_with_stdio(0);
+    std::cin.tie(nullptr);
+    long long test = 1;
+
+    cin >> test;
+    for (int i = 0; i < test; i += 1)
+    {
+        solve();
+    }
+    return 0;
+}

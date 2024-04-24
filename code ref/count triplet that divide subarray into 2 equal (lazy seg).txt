@@ -1,0 +1,162 @@
+#include <bits/stdc++.h>
+// #include <ext/pb_ds/assoc_container.hpp>
+// #include <ext/pb_ds/tree_policy.hpp>
+using namespace std;
+// using namespace __gnu_pbds;
+using ll = long long;
+// using int = long long;
+
+#define fi first
+#define se second
+struct node{
+    ll sum;
+    int val, cnt;
+    node(int val, ll sum, int cnt) : val(val), sum(sum), cnt(cnt) {}
+    node operator+ (pair<ll, ll> const &a) {
+        return node(val + a.fi, sum + a.se * cnt, cnt);
+    }
+    node& operator+= (pair<ll, ll>const &a) {
+        val += a.fi;
+        sum += a.se * cnt;
+        return *this;
+    }
+    node() {}
+};
+int arr[200002];
+int nxt[200002];
+int prv[200002];
+int idx[200002];
+node st[400002];
+int h, n;
+pair<ll, ll> lazy[200002];
+const pair<ll, ll>nul = {0, 0};
+pair<ll, ll>& operator+= (pair<ll, ll> &a, const pair<ll, ll> &b) {
+    a.fi += b.fi;
+    a.se += b.se;
+    return a;
+}
+
+inline node combine(node &a, node &b) {
+    if (a.val == b.val) {
+        return {a.val, a.sum + b.sum, a.cnt + b.cnt};
+    }
+    else if (a.val < b.val) return a;
+    else return b;
+    // else return min(a, b);
+}
+void apply(ll i, pair<ll, ll> p) {
+    st[i] += p;
+    if (i < n) lazy[i] += p;
+}
+void up(ll i) {
+    while (i > 1) 
+        i >>= 1, st[i] = combine(st[i << 1], st[i << 1 | 1]) + lazy[i];
+}
+void down(ll i) {
+    for (int s = h; s > 0; s--) {
+        ll loc = i >> s;
+        if (lazy[loc].fi || lazy[loc].se) {
+            apply(loc << 1, lazy[loc]);
+            apply(loc << 1 | 1, lazy[loc]);
+            lazy[loc] = nul;
+        }
+    }
+}
+// (, ]
+void update(ll l, ll r, pair<ll, ll> val) {
+    if (l > r) swap(l, r);
+    else l++;
+    ll sl = l + n, sr = r + n;
+    for (l += n, r += n; l < r; l >>= 1, r >>= 1) {
+        if (l & 1) apply(l++, val);
+        if (r & 1) apply(--r, val);
+    }
+    up(sl);
+    up(sr - 1);
+    // for (int i = 0; i < n; i++) down(i + n);
+    // for (;l < r; l++) st[l + n] = st[l + n] + val;
+}
+ll query(ll l, ll r) {
+    node res(INT_MAX, 0, 0);
+    l += n, r += n;
+    down(l);
+    down(r - 1);
+    for (; l < r; l >>= 1, r >>= 1) {
+        if (l & 1) res = combine(res, st[l++]);
+        if (r & 1) res = combine(res, st[--r]);
+    }
+    // for (; l < r; l++) res = combine(res, st[l]);
+    if (res.val == 1) return res.sum;
+    else return 0;
+}
+
+struct cmp{
+    bool operator() (pair<ll, ll> const &a, pair<ll, ll> const &b) const {
+        if (a.fi == b.fi) return a.se > b.se;
+        else return a.fi < b.fi;
+    }
+};
+
+multiset <pair<ll, ll>, cmp>s;
+void rem(ll x, ll y) {
+    pair<ll, ll>temp = {x, y};
+    auto it = s.lower_bound(temp);
+    update(prev(it)->se, next(it)->se, {1, abs(next(it)->fi - prev(it)->fi)});
+    update(prev(it)->se, y, {-1, -abs(x - prev(it)->fi)});
+    update(y, next(it)->se, {-1, -abs(x - next(it)->fi)});
+    s.erase(it);
+}
+void add(ll x, ll y) {
+    auto it = s.insert({x, y});
+    update(prev(it)->se, y, {1, abs(x - prev(it)->fi)});
+    update(y, next(it)->se, {1, abs(x - next(it)->fi)});
+    update(prev(it)->se, next(it)->se, {-1, -abs(next(it)->fi - prev(it)->fi)});
+}
+void solve() {
+    cin >> n;
+    h = sizeof(int) * 8 - __builtin_clz(n);
+    for (int i = 0; i < n; i++) 
+        cin >> arr[i];
+    ll hi = *max_element(arr, arr + n);
+    // cout << hi << " ";
+    fill(idx, idx + hi + 1, -1);
+    for (int i = 0; i < n; i++) {
+        prv[i] = idx[arr[i]];
+        idx[arr[i]] = i;
+    }
+    fill(idx, idx + hi + 1, n);
+    for (int i = n - 1; i >= 0; i--) {
+        nxt[i] = idx[arr[i]];
+        idx[arr[i]] = i;
+    }
+    // (, ]
+    s.insert({-1, n});
+    s.insert({n - 1, 0});
+    for (int i = 0; i < n; i++) st[i + n] = {1, n, 1};  
+    for (int i = n - 1; i >= 1; i--) st[i] = combine(st[i << 1], st[i << 1 | 1]); 
+    for (int i = 0; i < n; i++)
+        if (prv[i] == -1) 
+            add(-1, i);   
+    ll res = 0;
+    for (int i = 0; i < n; i++) {
+        rem(prv[i], i);
+        add(i, nxt[i]);
+        res += query(nxt[i], n);
+    }
+    cout << res;
+}
+int main()
+{
+
+    // freopen("shopping.INP", "r" ,stdin); freopen("shopping.OUT", "w", stdout);
+    std::ios_base::sync_with_stdio(0);
+    std::cin.tie(nullptr);
+    long long test = 1;
+
+    // cin >> test;
+    for (int i = 0; i < test; i += 1)
+    {
+        solve();
+    }
+    return 0;
+}
